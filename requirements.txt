@@ -8,3 +8,6 @@ python-dotenv
 httpx
 PyGithub
 unidiff
+pyjwt 
+cryptography 
+requests 
