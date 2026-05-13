@@ -22,12 +22,8 @@ class LLMService:
     def get_llm(cls):
         if cls._llm is None:
             cls._llm = ChatOllama(
-                 model=ModelEnum.PHI3,
-                temperature =0.7,
+                model=ModelEnum.PHI3,
                 device = "cpu",
-                format="json",
-                num_predict=-1,
-                max_tokens=1000,
-                
+                format="json"
             )
         return cls._llm
