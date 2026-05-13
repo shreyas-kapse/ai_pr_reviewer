@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+langgraph
+langchain
+langchain-ollama
+pydantic
+python-dotenv
+httpx
+PyGithub
