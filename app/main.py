@@ -4,12 +4,14 @@ from unidiff import PatchSet
 import requests
 
 from langchain_core.prompts import PromptTemplate
+from services.github_review_service import GitHubReviewService
+from services.reviewers.final_review_service import FinalReviewService
 from services.llm_service import LLMService
 from services.reviewers.bug_risk_review_service import BugRiskReviewService
 from services.reviewers.performance_review_service import PerformanceReviewService
 from services.reviewers.security_review_service import SecurityReviewService
 from services.reviewers.pr_review_service import PRReviewService
-
+from services.github_auth_service import GitHubAuthService
 
 app = FastAPI()
 
@@ -28,7 +30,9 @@ async def github_webhook(request: Request):
         # Only process PR opened/reopened/synchronize
         if action not in ["opened", "reopened", "synchronize"]:
             return {"message": "ignored event"}
-
+        
+        installation_id = payload["installation"]["id"]
+        
         pull_request = payload["pull_request"]
         pr_number = pull_request["number"]
         repo_name = payload["repository"]["name"]
@@ -126,6 +130,27 @@ async def github_webhook(request: Request):
         )
         print("\n -------------\n final anwser")
         print(review)
+        
+        github_auth_service = GitHubAuthService()
+        
+        installation_token = github_auth_service.get_installation_token(installation_id)
+        print("\n -------------- installation token ")
+        print(installation_token)
+        
+        github_review_service = GitHubReviewService()
+        final_review_service = FinalReviewService()
+        final_review = final_review_service.review_code(review=review)
+        print("\n ------------ final review ")
+        print(final_review)
+        response = github_review_service.post_review(
+            installation_token=installation_token,
+            owner=owner,
+            repo=repo_name,
+            pr_number=pr_number,
+            review_body=final_review.content
+        )
+        print("\n ------ github post review response ")
+        print(response)
         return {
             "status": "success",
             "files_changed": len(changed_files)
