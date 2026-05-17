@@ -3,6 +3,7 @@ from graph.state import ReviewState
 from langgraph.types import interrupt
 from typing import Literal
 from langgraph.graph import END
+from read_yaml import load_config
 
 class PostReviewNode:
     def __init__(self):
@@ -30,13 +31,18 @@ class PostReviewNode:
         self,
         state: ReviewState
     ):
+        config = load_config()
         print("\n ----------------- PR Review -------------------------")
         print(state["github_review"].content)
+        hitl = config["post-review"]["human-in-loop"]
+        approved = True
 
-        approval = input(
-            "\nApprove PR review? yes/no: "
-        )
-        approved = approval.lower() == "yes"
+        if hitl:
+            approval = input(
+                "\nApprove PR review? yes/no: "
+            )
+            approved = approval.strip().lower() == "yes"
+
         return {
             "approved": approved
         }
