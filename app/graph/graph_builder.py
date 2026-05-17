@@ -5,10 +5,16 @@ from graph.nodes.performance_review_node import PerformanceReviewNode
 from graph.nodes.security_review_node import SecurityReviewNode
 from graph.nodes.pr_review_node import PRReviewNode
 from graph.nodes.final_review_node import FinalReviewNode
-
 from graph.state import ReviewState
+from langgraph.checkpoint.sqlite import SqliteSaver
+import sqlite3
+
+conn = sqlite3.connect(database= 'ai_code_review.db', check_same_thread=False)
 
 builder = StateGraph(ReviewState)
+
+# checkpointer
+checkpointer = SqliteSaver(conn=conn)
 
 bug_risk_node= BugRiskReviewNode()
 post_review_node = PostReviewNode()
@@ -39,4 +45,4 @@ builder.add_edge("pr_review", "final_review")
 builder.add_edge("final_review", "post_review")
 builder.add_edge("post_review", END)
 
-graph = builder.compile()
+graph = builder.compile(checkpointer=checkpointer)

@@ -96,7 +96,12 @@ async def github_webhook(request: Request):
             "pr_number": pr_number,
             "installation_token": github_auth_service.get_installation_token(installation_id=installation_id),
             "changed_files": changed_files
-        })
+        },
+            config={
+                "configurable": {
+                    "thread_id": f"{repo_name}-{pr_number}"
+                }
+            })
         print(graph_response)
         return {
             "status": "success",
