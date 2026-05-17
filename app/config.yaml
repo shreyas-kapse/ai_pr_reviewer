@@ -1,2 +1,11 @@
 post-review:
   human-in-loop: False
+  
+review:
+  max_files: 20
+  skip_extensions:
+    - ".md"
+    - ".txt"
+    - ".json"
+    - ".lock"
+  max_patch_chars: 15000

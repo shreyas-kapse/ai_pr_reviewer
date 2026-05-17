@@ -9,7 +9,7 @@ from services.llm_service import LLMService
 from services.github_auth_service import GitHubAuthService
 from graph.graph_builder import(build_graph)
 from contextlib import asynccontextmanager
-
+from read_yaml import load_config
 
 graph = None
 saver_context = None
@@ -45,7 +45,14 @@ async def root():
 async def github_webhook(request: Request):
     try:
         global graph
+        config = load_config()
+        review_config = config["review"]
 
+        max_files = review_config["max_files"]
+
+        skip_extensions = review_config["skip_extensions"]
+        max_patch_chars = review_config["max_patch_chars"]
+        
         github_auth_service = GitHubAuthService()
         
         raw_body = await request.body()
@@ -123,14 +130,29 @@ async def github_webhook(request: Request):
 
             changed_files.append(file_data)
 
+        filtered_files = []
+        for file in changed_files:
+            file_name = file["file_name"]
+            if any(
+                file_name.endswith(ext)
+                for ext in skip_extensions
+            ):
+                print(f"Skipping file: {file_name}")
+                continue
+            if len(file["patch"]) > max_patch_chars:
+                print(f"Skipping large patch: {file_name}")
+                continue
+            
+            filtered_files.append(file)
+        filtered_files = filtered_files[:max_files]
         print("\n========== CHANGED FILES ==========")
 
-        for file in changed_files:
+        for file in filtered_files:
             print("\nFILE:", file["file_name"])
             print("Added:", file["added_lines"])
             print("Removed:", file["removed_lines"])
 
-        print(changed_files)
+        print(filtered_files)
         # review code
         # review_code(patch=patch_set)
         print("\n -----\n starting AI based code review")
@@ -142,7 +164,7 @@ async def github_webhook(request: Request):
             "repo": repo_name,
             "pr_number": pr_number,
             "installation_token": github_auth_service.get_installation_token(installation_id=installation_id),
-            "changed_files": changed_files
+            "changed_files": filtered_files
         },
             config={
                 "configurable": {
@@ -152,7 +174,7 @@ async def github_webhook(request: Request):
         print(graph_response)
         return {
             "status": "success",
-            "files_changed": len(changed_files)
+            "files_changed": len(filtered_files)
         }
 
     except Exception as e:
