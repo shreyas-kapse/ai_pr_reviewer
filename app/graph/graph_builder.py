@@ -34,7 +34,7 @@ builder.add_node("performance_review", performance_review_node.performance_code_
 builder.add_node("pr_review", pr_review_node.pr_code_review_node)
 builder.add_node("final_review", final_review_node.final_code_review_node)
 builder.add_node("post_review", post_review_node.post_review)
-
+builder.add_node("approve_review", post_review_node.approve_review)
 
 builder.add_edge(START, "security_review")
 builder.add_edge(START, "bug_risk_review")
@@ -46,7 +46,11 @@ builder.add_edge("performance_review", "pr_review")
 
 builder.add_edge("pr_review", "final_review")
 
-builder.add_edge("final_review", "post_review")
+builder.add_edge("final_review", "approve_review")
+builder.add_conditional_edges(
+    "approve_review",
+    post_review_node.approval_router
+)
 builder.add_edge("post_review", END)
 
 graph = builder.compile(checkpointer=checkpointer)

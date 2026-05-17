@@ -17,3 +17,4 @@ class ReviewState(TypedDict):
 
     final_review: Dict
     github_review: str
+    approved: bool
