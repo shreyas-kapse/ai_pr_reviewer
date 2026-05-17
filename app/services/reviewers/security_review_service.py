@@ -9,12 +9,12 @@ class SecurityReviewService(BaseReviewer):
         self.llm = LLMService.get_llm()
         self.llm = self.llm.with_structured_output(ReviewSchema)
     
-    def review_code(self, file_patch: list):
+    async def review_code(self, file_patch: list):
         prompt = PromptTemplate(
             template=security_review_prompt,
             input_variables=["file_patch"]
         )
-        response = self.llm.invoke(prompt.format(
+        response = await self.llm.ainvoke(prompt.format(
             file_patch=file_patch
         ))
         

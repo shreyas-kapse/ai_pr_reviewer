@@ -9,7 +9,7 @@ class PRReviewService:
         self.llm = LLMService.get_llm()
         self.llm = self.llm.with_structured_output(FinalReviewSchema)
     
-    def review_code(self, 
+    async def review_code(self, 
                     file_patch: str, 
                     security_review:list, 
                     bug_risk_review:list,
@@ -19,7 +19,7 @@ class PRReviewService:
             template=final_review_prompt,
             input_variables=["file_patch", "security_review", "performance_review", "bug_risk_review"]
         )
-        response = self.llm.invoke(
+        response = await self.llm.ainvoke(
             prompt.format(
             file_patch=file_patch,
             security_review = security_review,
