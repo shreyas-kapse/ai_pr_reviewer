@@ -11,3 +11,4 @@ unidiff
 pyjwt 
 cryptography 
 requests 
+aiosqlite
