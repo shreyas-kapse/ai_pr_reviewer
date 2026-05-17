@@ -18,7 +18,9 @@ builder = StateGraph(ReviewState)
 
 # checkpointer
 checkpointer = SqliteSaver(conn=conn)
-os.environ['LANGCHAIN_TRACING_V2'] = 'true'
+
+if os.getenv("LANGCHAIN_API_KEY"):
+    os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 
 bug_risk_node= BugRiskReviewNode()
 post_review_node = PostReviewNode()

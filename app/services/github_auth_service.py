@@ -2,7 +2,8 @@ import os
 import time
 import jwt
 import requests
-
+import hmac
+import hashlib
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,3 +51,26 @@ class GitHubAuthService:
         response.raise_for_status()
         data = response.json()
         return data["token"]
+    
+    def verify_signature(
+        self,
+        payload_body: bytes,
+        signature_header: str,
+        secret: str
+    ) -> bool:
+        if not signature_header:
+            return False
+
+        expected_signature = (
+            "sha256="
+            + hmac.new(
+                secret.encode(),
+                payload_body,
+                hashlib.sha256
+            ).hexdigest()
+        )
+
+        return hmac.compare_digest(
+            expected_signature,
+            signature_header
+        )

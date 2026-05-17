@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 import traceback
 from unidiff import PatchSet
 import requests
-
+import json
+import os
 from langchain_core.prompts import PromptTemplate
 from services.llm_service import LLMService
 from services.github_auth_service import GitHubAuthService
@@ -18,7 +19,30 @@ async def root():
 @app.post("/webhook/github")
 async def github_webhook(request: Request):
     try:
-        payload = await request.json()
+        github_auth_service = GitHubAuthService()
+        
+        raw_body = await request.body()
+        
+        # GITHUB SIGNATURE
+        signature = request.headers.get(
+            "X-Hub-Signature-256"
+        )
+        is_valid = (
+            github_auth_service.verify_signature(
+                payload_body=raw_body,
+                signature_header=signature,
+                secret=os.getenv(
+                    "GITHUB_WEBHOOK_SECRET"
+                )
+            )
+        )
+        if not is_valid:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid webhook signature"
+            )
+            
+        payload = json.loads(raw_body)
         action = payload.get("action")
         
         # Only process PR opened/reopened/synchronize
@@ -50,8 +74,6 @@ async def github_webhook(request: Request):
         print("Status Code:", response.status_code)
         print("Headers:", response.headers)
 
-        diff_text = response.text
-
         print("\n========== RAW DIFF ==========")
         print(diff_text[:1000])
 
@@ -59,7 +81,6 @@ async def github_webhook(request: Request):
             return {
                 "error": "diff text is empty"
             }
-                
         patch_set = PatchSet(diff_text)
 
         changed_files = []
@@ -88,7 +109,6 @@ async def github_webhook(request: Request):
         print("\n -----\n starting AI based code review")
 
         print("-----\n starting bug risk review")
-        github_auth_service = GitHubAuthService()
         
         graph_response = graph.invoke({
             "owner": owner,
@@ -115,33 +135,3 @@ async def github_webhook(request: Request):
         return {
             "error": str(e)
         }
-        
-def review_code(patch: str):
-
-    prompt = PromptTemplate(template="""
-    You are a senior software engineer reviewing a pull request.
-
-    Review this git diff carefully.
-
-    Focus on:
-    - Bugs
-    - Security issues
-    - Performance problems
-    - Code quality
-
-    Keep feedback concise and actionable.
-
-    Git Diff:
-    {patch}
-    """, input_variables=[patch])
-    
-    llm = LLMService.get_llm()
-
-    response =llm.invoke(
-        prompt.format(
-        patch=patch
-        )
-    )
-    print("\n response from LLM \n")
-    print(response)
-    return response.choices[0].message.content
