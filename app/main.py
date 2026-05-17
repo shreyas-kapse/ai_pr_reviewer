@@ -4,15 +4,9 @@ from unidiff import PatchSet
 import requests
 
 from langchain_core.prompts import PromptTemplate
-from services.github_review_service import GitHubReviewService
-from services.reviewers.final_review_service import FinalReviewService
 from services.llm_service import LLMService
-from services.reviewers.bug_risk_review_service import BugRiskReviewService
-from services.reviewers.performance_review_service import PerformanceReviewService
-from services.reviewers.security_review_service import SecurityReviewService
-from services.reviewers.pr_review_service import PRReviewService
 from services.github_auth_service import GitHubAuthService
-
+from graph.graph_builder import(graph)
 app = FastAPI()
 
 
@@ -94,68 +88,20 @@ async def github_webhook(request: Request):
         print("\n -----\n starting AI based code review")
 
         print("-----\n starting bug risk review")
-        bug_risk_reviews = []
-        bug_risk_service = BugRiskReviewService()
-        for file in changed_files:
-            response = bug_risk_service.review_code(file_patch=file)
-            if response:
-                bug_risk_reviews.append(response)
-        
-        print(f"\n bug risk review \n {bug_risk_reviews}")
-        print("\n -----\n starting performance review")
-        performance_review = []
-        performance_review_service = PerformanceReviewService()
-        for file in changed_files:
-            response = performance_review_service.review_code(file_patch=file)
-            if response:
-                performance_review.append(response)
-                
-        print(f"\n performance review \n {performance_review}")
-        print("\n ------\n starting security review")
-        security_reviews = []
-        security_reviews_service = SecurityReviewService()
-        for file in changed_files:
-            response = security_reviews_service.review_code(file_patch=file)
-            if response:
-                security_reviews.append(response)
-                
-        print(f"\n security review \n {security_reviews}")
-        print("\n -----\n starting final review")
-        pr_review = PRReviewService()
-        review = pr_review.review_code(
-            file_patch=patch_set,
-            security_review=security_reviews,
-            bug_risk_review=bug_risk_reviews,
-            performance_review=performance_review
-        )
-        print("\n -------------\n final anwser")
-        print(review)
-        
         github_auth_service = GitHubAuthService()
         
-        installation_token = github_auth_service.get_installation_token(installation_id)
-        print("\n -------------- installation token ")
-        print(installation_token)
-        
-        github_review_service = GitHubReviewService()
-        final_review_service = FinalReviewService()
-        final_review = final_review_service.review_code(review=review)
-        print("\n ------------ final review ")
-        print(final_review)
-        response = github_review_service.post_review(
-            installation_token=installation_token,
-            owner=owner,
-            repo=repo_name,
-            pr_number=pr_number,
-            review_body=final_review.content
-        )
-        print("\n ------ github post review response ")
-        print(response)
+        graph_response = graph.invoke({
+            "owner": owner,
+            "repo": repo_name,
+            "pr_number": pr_number,
+            "installation_token": github_auth_service.get_installation_token(installation_id=installation_id),
+            "changed_files": changed_files
+        })
+        print(graph_response)
         return {
             "status": "success",
             "files_changed": len(changed_files)
         }
-        # return {"status": "received"}
 
     except Exception as e:
         print("========== ERROR ==========")
