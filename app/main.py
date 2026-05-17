@@ -9,7 +9,7 @@ from services.llm_service import LLMService
 from services.github_auth_service import GitHubAuthService
 from graph.graph_builder import(build_graph)
 from contextlib import asynccontextmanager
-from read_yaml import load_config
+from services.config_service import ConfigService
 
 graph = None
 saver_context = None
@@ -45,7 +45,7 @@ async def root():
 async def github_webhook(request: Request):
     try:
         global graph
-        config = load_config()
+        config = ConfigService.get_config()
         review_config = config["review"]
 
         max_files = review_config["max_files"]

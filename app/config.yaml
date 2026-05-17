@@ -1,6 +1,18 @@
 post-review:
-  human-in-loop: False
-  
+  human-in-loop: True
+
+llm:
+  provider: ollama
+  ollama:
+    model: qwen2.5-coder:7b-instruct-q4_K_M
+    temperature: 0
+    num_ctx: 2048
+    device: cpu
+
+  gemini:
+    model: gemini-3-flash-preview
+    temperature: 0 
+
 review:
   max_files: 20
   skip_extensions:

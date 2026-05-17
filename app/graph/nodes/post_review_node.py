@@ -3,7 +3,7 @@ from graph.state import ReviewState
 from langgraph.types import interrupt
 from typing import Literal
 from langgraph.graph import END
-from read_yaml import load_config
+from services.config_service import ConfigService
 
 class PostReviewNode:
     def __init__(self):
@@ -31,7 +31,7 @@ class PostReviewNode:
         self,
         state: ReviewState
     ):
-        config = load_config()
+        config = ConfigService.get_config()
         print("\n ----------------- PR Review -------------------------")
         print(state["github_review"].content)
         hitl = config["post-review"]["human-in-loop"]
