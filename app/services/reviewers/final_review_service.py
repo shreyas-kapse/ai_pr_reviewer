@@ -8,12 +8,12 @@ class FinalReviewService(BaseReviewer):
     def __init__(self):
         self.llm = LLMService.get_llm()
     
-    def review_code(self, review: FinalReviewSchema):
+    async def review_code(self, review: FinalReviewSchema):
         prompt = PromptTemplate(
             template=FINAL_GITHUB_REVIEW_PROMPT,
             input_variables=["final_review"]
         )
-        response = self.llm.invoke(prompt.format(
+        response = await self.llm.ainvoke(prompt.format(
             final_review=review
         ))
         return response

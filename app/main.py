@@ -7,9 +7,34 @@ import os
 from langchain_core.prompts import PromptTemplate
 from services.llm_service import LLMService
 from services.github_auth_service import GitHubAuthService
-from graph.graph_builder import(graph)
-app = FastAPI()
+from graph.graph_builder import(build_graph)
+from contextlib import asynccontextmanager
 
+
+graph = None
+saver_context = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    global graph
+    global saver_context
+
+    graph, saver_context = (
+        await build_graph()
+    )
+    yield
+    if saver_context:
+
+        await saver_context.__aexit__(
+            None,
+            None,
+            None
+        )
+
+app = FastAPI(
+    lifespan=lifespan
+)
 
 @app.get("/")
 async def root():
@@ -19,6 +44,8 @@ async def root():
 @app.post("/webhook/github")
 async def github_webhook(request: Request):
     try:
+        global graph
+
         github_auth_service = GitHubAuthService()
         
         raw_body = await request.body()
@@ -110,7 +137,7 @@ async def github_webhook(request: Request):
 
         print("-----\n starting bug risk review")
         
-        graph_response = graph.invoke({
+        graph_response = await graph.ainvoke({
             "owner": owner,
             "repo": repo_name,
             "pr_number": pr_number,

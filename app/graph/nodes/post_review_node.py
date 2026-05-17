@@ -10,7 +10,7 @@ class PostReviewNode:
         self.github_review_service = GitHubReviewService()
         
     def post_review(self, state:ReviewState):
-        response = self.github_review_service.post_review(
+        response =  self.github_review_service.post_review(
             installation_token=state["installation_token"],
             owner=state["owner"],
             repo=state["repo"],

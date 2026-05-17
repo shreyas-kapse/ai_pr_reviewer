@@ -6,18 +6,18 @@ from graph.nodes.security_review_node import SecurityReviewNode
 from graph.nodes.pr_review_node import PRReviewNode
 from graph.nodes.final_review_node import FinalReviewNode
 from graph.state import ReviewState
-from langgraph.checkpoint.sqlite import SqliteSaver
-import sqlite3
+from langgraph.checkpoint.sqlite.aio import (
+    AsyncSqliteSaver
+)
 import dotenv
 import os
 
 dotenv.load_dotenv()
-conn = sqlite3.connect(database= 'ai_code_review.db', check_same_thread=False)
+
 
 builder = StateGraph(ReviewState)
 
-# checkpointer
-checkpointer = SqliteSaver(conn=conn)
+
 
 if os.getenv("LANGCHAIN_API_KEY"):
     os.environ['LANGCHAIN_TRACING_V2'] = 'true'
@@ -55,4 +55,15 @@ builder.add_conditional_edges(
 )
 builder.add_edge("post_review", END)
 
-graph = builder.compile(checkpointer=checkpointer)
+async def build_graph():
+    saver_context = (
+        AsyncSqliteSaver.from_conn_string(
+            "ai_code_review.db"
+        )
+    )
+    checkpointer = await saver_context.__aenter__()
+    graph = builder.compile(
+        checkpointer=checkpointer
+    )
+
+    return graph, saver_context
