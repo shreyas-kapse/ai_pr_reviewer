@@ -8,13 +8,17 @@ from graph.nodes.final_review_node import FinalReviewNode
 from graph.state import ReviewState
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
+import dotenv
+import os
 
+dotenv.load_dotenv()
 conn = sqlite3.connect(database= 'ai_code_review.db', check_same_thread=False)
 
 builder = StateGraph(ReviewState)
 
 # checkpointer
 checkpointer = SqliteSaver(conn=conn)
+os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 
 bug_risk_node= BugRiskReviewNode()
 post_review_node = PostReviewNode()
